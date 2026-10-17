@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "description": "Camp — a Basecamp-style project collaboration tool",
-  "packageManager": "pnpm@11.3.0",
   "scripts": {
     "build": "pnpm run build:server && pnpm run build:web",
     "build:server": "tsc -p tsconfig.json",
