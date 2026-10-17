@@ -43,22 +43,10 @@ export function buildRootApp(camp: Camp, config: ServerConfig): express.Express 
   root.use(vhost(/^api\..+$/, api as unknown as VhostHandler));
   root.use(vhost(/^mcp\..+$/, createMcpApp(camp) as unknown as VhostHandler));
 
-  // Any other Host (e.g. plain localhost): explain where things live.
-  root.use((req, res) => {
-    const port = req.headers.host?.split(':')[1];
-    const suffix = port ? `:${port}` : '';
-    res
-      .status(404)
-      .type('text/plain')
-      .send(
-        'Camp serves three virtual hosts on this port:\n\n' +
-          `  http://app.localhost${suffix}/      web app\n` +
-          `  http://api.localhost${suffix}/      REST API\n` +
-          `  http://mcp.localhost${suffix}/mcp   MCP (Streamable HTTP)\n\n` +
-          'If your resolver lacks *.localhost support, send the Host header explicitly, e.g.\n' +
-          `  curl -H "Host: api.localhost" http://127.0.0.1${suffix}/health\n`,
-      );
-  });
+  // Any other Host (e.g. a bare hostname behind a reverse proxy/tunnel that doesn't send
+  // app.*): fall back to the main app rather than a dead end, since that's almost always
+  // what's wanted when Camp is reached by a hostname we didn't anticipate.
+  root.use(web);
   return root;
 }
 

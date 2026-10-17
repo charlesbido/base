@@ -85,9 +85,11 @@ describe('vhost dispatch', () => {
     expect(app.status).toBe(200);
     expect(String(app.body)).toContain('<div id="root">');
     expect((await call('mcp.localhost', 'GET', '/')).body).toContain('Camp MCP server');
-    const other = await call('localhost', 'GET', '/');
-    expect(other.status).toBe(404);
-    expect(other.body).toContain('api.localhost');
+    // An unrecognized Host (e.g. a reverse proxy/tunnel hostname) falls back to the app,
+    // not a dead end, since that's almost always what's wanted.
+    const other = await call('localhost', 'GET', '/projects/123');
+    expect(other.status).toBe(200);
+    expect(String(other.body)).toContain('<div id="root">');
   });
 
   it('also mounts the API same-origin at app.*/api (first-party session cookie for the SPA)', async () => {

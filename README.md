@@ -45,7 +45,8 @@ One Express server dispatches on the `Host` header (via the `vhost` package):
 | `api.*`        | The REST API                                                                    |
 | `mcp.*`        | The MCP server: Streamable HTTP at `POST /mcp`                                  |
 
-Any other host (for example plain `localhost:3000`) gets a short help page.
+Any other host (for example plain `localhost:3000`, or a reverse proxy/tunnel hostname like a
+Tailscale MagicDNS name) falls back to the `app.*` app rather than a dead end.
 
 `app.localhost`, `api.localhost` and `mcp.localhost` resolve to 127.0.0.1 automatically on most
 systems (RFC 6761 reserves `.localhost`; Chrome, Firefox, curl and systemd-resolved all handle
