@@ -1,15 +1,13 @@
 import type { DomainError } from './types';
 
 /**
- * Where the API lives. On app.<domain> we call the sibling api.<domain> (same port);
- * otherwise (e.g. the Vite dev server on localhost:5173) default to api.localhost:3000.
+ * Where the API lives. By default it's same-origin at /api: the server mounts the REST API on
+ * app.*\/api (and the Vite dev server proxies /api), so the session cookie is first-party.
+ * Override with VITE_API_URL to point at another deployment.
  */
 export function apiBase(): string {
   const configured = import.meta.env.VITE_API_URL as string | undefined;
-  if (configured) return configured.replace(/\/$/, '');
-  const { protocol, host } = window.location;
-  if (host.startsWith('app.')) return `${protocol}//api.${host.slice('app.'.length)}`;
-  return 'http://api.localhost:3000';
+  return (configured ?? '/api').replace(/\/$/, '');
 }
 
 export class ApiError extends Error {
@@ -29,7 +27,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   try {
     res = await fetch(`${apiBase()}${path}`, {
       method,
-      credentials: 'include', // send the session cookie cross-origin (app.* -> api.*)
+      credentials: 'include', // send the session cookie (also when VITE_API_URL is cross-origin)
       headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
     });

@@ -90,12 +90,22 @@ describe('vhost dispatch', () => {
     expect(other.body).toContain('api.localhost');
   });
 
-  it('allows CORS with credentials from the sibling app.* origin only', async () => {
-    const ok = await call('api.localhost', 'OPTIONS', '/projects', undefined, { Origin: `http://app.localhost:${port}` });
+  it('also mounts the API same-origin at app.*/api (first-party session cookie for the SPA)', async () => {
+    const reg = await call('app.localhost', 'POST', '/api/auth/register', { email: 'spa@example.com', name: 'Spa', password: 'password123' });
+    expect(reg.status).toBe(201);
+    const cookie = String(reg.headers['set-cookie']).split(';')[0]!;
+    const me = await call('app.localhost', 'GET', '/api/auth/me', undefined, { Cookie: cookie });
+    expect(me.body).toMatchObject({ email: 'spa@example.com' });
+    // Same session works on the api.* vhost: one API, two mounts.
+    expect((await call('api.localhost', 'GET', '/auth/me', undefined, { Cookie: cookie })).status).toBe(200);
+    expect((await call('app.localhost', 'GET', '/api/nope')).status).toBe(404);
+  });
+
+  it('allows CORS with credentials only from configured origins', async () => {
+    const ok = await call('api.localhost', 'OPTIONS', '/projects', undefined, { Origin: 'http://localhost:5173' });
     expect(ok.status).toBe(204);
     expect(ok.headers['access-control-allow-credentials']).toBe('true');
-    const dev = await call('api.localhost', 'GET', '/health', undefined, { Origin: 'http://localhost:5173' });
-    expect(dev.headers['access-control-allow-origin']).toBe('http://localhost:5173');
+    expect(ok.headers['access-control-allow-origin']).toBe('http://localhost:5173');
     const evil = await call('api.localhost', 'GET', '/health', undefined, { Origin: 'http://evil.example' });
     expect(evil.headers['access-control-allow-origin']).toBeUndefined();
   });

@@ -1,8 +1,10 @@
 /**
  * Entrypoint: wires adapters into the domain and serves three vhosts from ONE HTTP server/port:
  *
- *   app.*  -> React SPA (static build from web/dist)
- *   api.*  -> REST API adapter
+ *   app.*  -> React SPA (static build from web/dist), plus the REST API mounted at /api so the
+ *            browser's session cookie is first-party (see DECISIONS.md: *.localhost siblings are
+ *            different "sites", so a cookie on api.* is not sent with fetches from app.*)
+ *   api.*  -> REST API adapter (for curl, scripts, other clients)
  *   mcp.*  -> MCP adapter (Streamable HTTP at /mcp)
  *
  * *.localhost resolves to 127.0.0.1 on most systems (RFC 6761), so http://app.localhost:3000
@@ -30,13 +32,15 @@ export function buildRootApp(camp: Camp, config: ServerConfig): express.Express 
   root.disable('x-powered-by');
   // Match on the first DNS label so any base domain works (app.localhost, app.camp.example.com, ...).
   // (vhost anchors patterns at both ends, hence the trailing .+$.)
-  root.use(vhost(/^app\..+$/, createWebApp(config.webDist) as unknown as VhostHandler));
-  root.use(
-    vhost(
-      /^api\..+$/,
-      createApiApp(camp, { corsOrigins: config.corsOrigins, secureCookies: config.secureCookies }) as unknown as VhostHandler,
-    ),
-  );
+  const api = createApiApp(camp, { corsOrigins: config.corsOrigins, secureCookies: config.secureCookies });
+
+  const web = express();
+  web.disable('x-powered-by');
+  web.use('/api', api); // same Express app instance, mounted in-process: no proxy hop, no duplicate logic
+  web.use(createWebApp(config.webDist));
+
+  root.use(vhost(/^app\..+$/, web as unknown as VhostHandler));
+  root.use(vhost(/^api\..+$/, api as unknown as VhostHandler));
   root.use(vhost(/^mcp\..+$/, createMcpApp(camp) as unknown as VhostHandler));
 
   // Any other Host (e.g. plain localhost): explain where things live.
@@ -63,7 +67,7 @@ function main(): void {
   const { camp } = openCamp(DEFAULT_DB_FILE);
   const config: ServerConfig = {
     webDist: process.env.WEB_DIST ?? fileURLToPath(new URL('../web/dist', import.meta.url)),
-    corsOrigins: (process.env.CORS_ORIGINS ?? `http://localhost:5173,http://app.localhost:5173`)
+    corsOrigins: (process.env.CORS_ORIGINS ?? '')
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean),

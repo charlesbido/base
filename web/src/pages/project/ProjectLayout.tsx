@@ -15,7 +15,7 @@ export interface ProjectContext {
 export const useProject = () => useOutletContext<ProjectContext>();
 
 export const PROJECT_TABS = [
-  { value: '', label: 'Home' },
+  { value: 'home', label: 'Home' },
   { value: 'todos', label: 'To-dos' },
   { value: 'messages', label: 'Message Board' },
   { value: 'docs', label: 'Docs' },
@@ -28,13 +28,14 @@ export function ProjectLayout() {
   const { projectId = '' } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const project = useAsync(() => api.get<ProjectDetail>(`/projects/${projectId}`), [projectId]);
+  const base = `/projects/${projectId}`;
+  const section = location.pathname.slice(base.length).split('/')[1] || 'home';
+  // Refetch on tab change too, so members/stats changed by other people are picked up.
+  const project = useAsync(() => api.get<ProjectDetail>(`/projects/${projectId}`), [projectId, section]);
 
   if (project.error && !project.data) return <ErrorAlert error={project.error} />;
   if (!project.data) return <PageLoader />;
 
-  const base = `/projects/${projectId}`;
-  const section = location.pathname.slice(base.length).split('/')[1] ?? '';
   const p = project.data;
 
   return (
@@ -60,7 +61,7 @@ export function ProjectLayout() {
           ))}
         </Group>
       </Group>
-      <Tabs value={section} onChange={(v) => navigate(v ? `${base}/${v}` : base)}>
+      <Tabs value={section} onChange={(v) => navigate(v && v !== 'home' ? `${base}/${v}` : base)}>
         <Tabs.List>
           {PROJECT_TABS.map((t) => (
             <Tabs.Tab key={t.value} value={t.value}>

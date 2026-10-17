@@ -10,7 +10,7 @@ import { errorHandler, send } from './respond.js';
 import { actorOf, requireUser, SESSION_COOKIE, tokenFrom } from './session.js';
 
 export interface ApiOptions {
-  /** Extra CORS origins beyond the automatic sibling app.* origin. */
+  /** Browser origins allowed to call this API cross-origin with credentials. */
   corsOrigins?: string[];
   /** Mark the session cookie Secure (enable behind HTTPS). */
   secureCookies?: boolean;

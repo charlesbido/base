@@ -153,6 +153,8 @@ function NewTodoForm({ listId, onCreated }: { listId: string; onCreated: () => v
     try {
       await api.post(`/todolists/${listId}/todos`, { title, assigneeId, dueDate: dueDate || null });
       setTitle('');
+      setAssigneeId(null);
+      setDueDate('');
       setError(undefined);
       onCreated();
     } catch (err) {

@@ -1,15 +1,13 @@
 import type { RequestHandler } from 'express';
 
 /**
- * Minimal CORS for the split-vhost setup: the SPA on app.<domain> calls the API on api.<domain>
- * with credentials (the session cookie). We allow:
- *   - the sibling "app." origin of whatever host the API was reached on (zero config), and
- *   - any explicitly configured extra origins (e.g. the Vite dev server).
+ * Minimal opt-in CORS for third-party browser clients of the api.* vhost (configure with
+ * CORS_ORIGINS). Camp's own SPA doesn't need it: it calls the API same-origin via app.*\/api.
  */
-export function cors(extraOrigins: readonly string[] = []): RequestHandler {
+export function cors(allowedOrigins: readonly string[] = []): RequestHandler {
   return (req, res, next) => {
     const origin = req.headers.origin;
-    if (origin && isAllowed(origin, req.headers.host, extraOrigins)) {
+    if (origin && allowedOrigins.includes(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Access-Control-Allow-Credentials', 'true');
       res.setHeader('Vary', 'Origin');
@@ -23,16 +21,4 @@ export function cors(extraOrigins: readonly string[] = []): RequestHandler {
     }
     next();
   };
-}
-
-function isAllowed(origin: string, apiHost: string | undefined, extra: readonly string[]): boolean {
-  if (extra.includes(origin)) return true;
-  if (!apiHost) return false;
-  try {
-    const url = new URL(origin);
-    // api.example.com:3000 -> app.example.com:3000
-    return url.host === apiHost.replace(/^api\./, 'app.');
-  } catch {
-    return false;
-  }
 }
