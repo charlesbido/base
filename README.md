@@ -15,16 +15,16 @@ The judgment calls behind all of this are listed in [DECISIONS.md](DECISIONS.md)
 Requires Node.js 20.11 or newer (developed on 22).
 
 ```sh
-npm install        # installs the backend and the web/ workspace
-npm run build      # tsc (backend) + tsc + vite build (frontend) -> dist/ and web/dist/
-npm test           # vitest: domain unit tests, SQLite/HTTP/MCP integration tests
-npm start          # node dist/server.js on port 3000
+pnpm install        # installs the backend and the web/ workspace
+pnpm run build      # tsc (backend) + tsc + vite build (frontend) -> dist/ and web/dist/
+pnpm test           # vitest: domain unit tests, SQLite/HTTP/MCP integration tests
+pnpm start          # node dist/server.js on port 3000
 ```
 
 Then open **http://app.localhost:3000** and create an account.
 
-For development, `npm run dev` runs the server with `tsx watch` (it serves whatever is in
-`web/dist`). For frontend hot reload, also run `npm run dev:web` and open http://localhost:5173.
+For development, `pnpm run dev` runs the server with `tsx watch` (it serves whatever is in
+`web/dist`). For frontend hot reload, also run `pnpm run dev:web` and open http://localhost:5173.
 The Vite dev server proxies `/api` to the backend.
 
 | Env var          | Default        | Meaning                                                      |
@@ -67,7 +67,7 @@ clients. Details are in DECISIONS.md.
 
 ## REST API walkthrough (curl)
 
-Every one of these commands was run against `npm run dev`. To authenticate, use either the
+Every one of these commands was run against `pnpm run dev`. To authenticate, use either the
 `camp_session` cookie (browsers) or `Authorization: Bearer <token>`.
 
 ```sh
@@ -163,8 +163,8 @@ To connect an MCP client (Claude Code, MCP Inspector, …), point it at
 For clients that launch a subprocess:
 
 ```sh
-CAMP_EMAIL=ada@example.com CAMP_PASSWORD=password123 npm run --silent mcp:stdio
-# or CAMP_TOKEN=<session token> npm run --silent mcp:stdio
+CAMP_EMAIL=ada@example.com CAMP_PASSWORD=password123 pnpm run --silent mcp:stdio
+# or CAMP_TOKEN=<session token> pnpm run --silent mcp:stdio
 ```
 
 Verified with:
@@ -210,7 +210,7 @@ src/
   compose.ts         composition root: SQLite + system adapters -> Camp
   server.ts          vhost wiring, one HTTP server
   mcp-stdio.ts       stdio MCP entrypoint
-web/                 React SPA (npm workspace; imports domain view types type-only)
+web/                 React SPA (pnpm workspace; imports domain view types type-only)
 test/
   fakes/             in-memory implementations of every port
   domain/            unit tests for every command and query (no I/O)
@@ -235,10 +235,10 @@ call the same methods; nothing in `domain/` or `ports/` changes.
 
 | Script               | Does |
 | -------------------- | ---- |
-| `npm run build`      | Typecheck and compile the backend to `dist/`, then typecheck and build the SPA to `web/dist/` |
-| `npm test`           | Run all Vitest suites |
-| `npm run typecheck`  | Strict typecheck of backend, tests and web without emitting |
-| `npm run dev`        | Backend with `tsx watch` |
-| `npm run dev:web`    | Vite dev server with HMR (proxies `/api` to the backend) |
-| `npm start`          | Run the compiled server |
-| `npm run mcp:stdio`  | MCP over stdio |
+| `pnpm run build`      | Typecheck and compile the backend to `dist/`, then typecheck and build the SPA to `web/dist/` |
+| `pnpm test`           | Run all Vitest suites |
+| `pnpm run typecheck`  | Strict typecheck of backend, tests and web without emitting |
+| `pnpm run dev`        | Backend with `tsx watch` |
+| `pnpm run dev:web`    | Vite dev server with HMR (proxies `/api` to the backend) |
+| `pnpm start`          | Run the compiled server |
+| `pnpm run mcp:stdio`  | MCP over stdio |

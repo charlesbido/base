@@ -47,3 +47,4 @@ Judgment calls made without being able to ask. Each has a one-line rationale.
 - **Event times are stored as UTC ISO-8601 instants; to-do due dates are timezone-less `YYYY-MM-DD` calendar dates.** A meeting is a moment in time, while a due date is a day.
 - **The Mantine theme lives in `web/src/theme.ts` (primary colour, fonts, radius, component defaults).** That's the single place to re-skin the app, as the spec asks.
 - **Pinned to current major versions: Express 5, React 19, Mantine 9, Vite 8, Vitest 5, TypeScript 7, react-router 8, zod 4.** The project is new, so there's no reason to start on older majors.
+- **Package manager is pnpm, not npm (the spec's default).** The user explicitly asked for pnpm as the project default; `pnpm-workspace.yaml` replaces the `workspaces` field in `package.json`, and `package-lock.json` was dropped in favor of the single root `pnpm-lock.yaml`.

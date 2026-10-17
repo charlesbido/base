@@ -1,0 +1,10 @@
+packages:
+  - web
+
+allowBuilds:
+  better-sqlite3: true
+  esbuild: true
+
+minimumReleaseAgeExclude:
+  - '@mantine/core@9.7.3'
+  - '@mantine/hooks@9.7.3'

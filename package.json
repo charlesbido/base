@@ -4,16 +4,14 @@
   "private": true,
   "type": "module",
   "description": "Camp — a Basecamp-style project collaboration tool",
-  "workspaces": [
-    "web"
-  ],
+  "packageManager": "pnpm@11.3.0",
   "scripts": {
-    "build": "npm run build:server && npm run build:web",
+    "build": "pnpm run build:server && pnpm run build:web",
     "build:server": "tsc -p tsconfig.json",
-    "build:web": "npm run build -w web",
-    "typecheck": "tsc -p tsconfig.test.json && npm run typecheck -w web",
+    "build:web": "pnpm -C web build",
+    "typecheck": "tsc -p tsconfig.test.json && pnpm -C web typecheck",
     "dev": "tsx watch src/server.ts",
-    "dev:web": "npm run dev -w web",
+    "dev:web": "pnpm -C web dev",
     "start": "node dist/server.js",
     "mcp:stdio": "tsx src/mcp-stdio.ts",
     "test": "vitest run",
