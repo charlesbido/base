@@ -41,6 +41,9 @@ export function Layout() {
               </Menu.Target>
               <Menu.Dropdown>
                 <Menu.Label>{user.email}</Menu.Label>
+                <Menu.Item component={Link} to="/settings/tokens">
+                  Access tokens
+                </Menu.Item>
                 <Menu.Item
                   onClick={async () => {
                     await logout();

@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router';
 import { Layout } from './components/Layout';
+import { AccessTokensPage } from './pages/AccessTokensPage';
 import { AuthPage } from './pages/AuthPage';
 import { PeoplePage } from './pages/PeoplePage';
 import { ProjectsPage } from './pages/ProjectsPage';
@@ -24,6 +25,7 @@ export function App() {
       <Route element={<Layout />}>
         <Route index element={<ProjectsPage />} />
         <Route path="people" element={<PeoplePage />} />
+        <Route path="settings/tokens" element={<AccessTokensPage />} />
         <Route path="projects/:projectId" element={<ProjectLayout />}>
           <Route index element={<ProjectHome />} />
           <Route path="todos" element={<TodosPage />} />
