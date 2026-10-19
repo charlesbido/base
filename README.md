@@ -224,6 +224,25 @@ Example client config:
 }
 ```
 
+## CLI
+
+A third adapter over the same commands/queries, no server required — it opens the SQLite database
+directly (`compose.ts`). Always requires a token (`--token <token>` or `CAMP_TOKEN=`); mint one
+with `POST api.*/access-tokens`, the web app's Access tokens page, or MCP's `create_access_token`.
+
+```sh
+pnpm run build
+PROJECT=$(node dist/cli.js create-project --name "Website redesign" --token "$TOKEN" | node -pe 'JSON.parse(require("fs").readFileSync(0)).id')
+node dist/cli.js list-todos --project-id "$PROJECT" --token "$TOKEN"
+node dist/cli.js help                 # every command
+node dist/cli.js help create-todo     # one command's flags
+```
+
+Command coverage is a superset of the MCP tool list (it also includes deletes/updates MCP omits
+for agent safety), since a human at a terminal gets the REST API's full CRUD surface. See
+`.claude/skills/camp-cli/SKILL.md` for the full command reference, output/exit-code conventions,
+and how to symlink `dist/cli.js` onto `PATH` as `camp` so it's callable from any directory.
+
 ## Architecture
 
 ```
@@ -240,9 +259,11 @@ src/
     system/          SystemClock, UuidGenerator, CryptoTokenGenerator, BcryptPasswordHasher
     http/            Express REST adapter + static SPA host
     mcp/             MCP tool definitions + Streamable HTTP app
+    cli/             CLI command table, flag parsing, dispatch (see "CLI" above)
   compose.ts         composition root: SQLite + system adapters -> Camp
   server.ts          vhost wiring, one HTTP server
   mcp-stdio.ts       stdio MCP entrypoint
+  cli.ts             CLI entrypoint
 web/                 React SPA (pnpm workspace; imports domain view types type-only)
 test/
   fakes/             in-memory implementations of every port
@@ -275,3 +296,4 @@ call the same methods; nothing in `domain/` or `ports/` changes.
 | `pnpm run dev:web`    | Vite dev server with HMR (proxies `/api` to the backend) |
 | `pnpm start`          | Run the compiled server |
 | `pnpm run mcp:stdio`  | MCP over stdio |
+| `pnpm run cli`        | CLI via `tsx` (no build step), e.g. `pnpm run cli -- whoami --token $TOKEN` |

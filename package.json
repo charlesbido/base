@@ -4,15 +4,19 @@
   "private": true,
   "type": "module",
   "description": "Camp — a Basecamp-style project collaboration tool",
+  "bin": {
+    "camp": "dist/cli.js"
+  },
   "scripts": {
     "build": "pnpm run build:server && pnpm run build:web",
-    "build:server": "tsc -p tsconfig.json",
+    "build:server": "tsc -p tsconfig.json && chmod +x dist/cli.js",
     "build:web": "pnpm -C web build",
     "typecheck": "tsc -p tsconfig.test.json && pnpm -C web typecheck",
     "dev": "tsx watch src/server.ts",
     "dev:web": "pnpm -C web dev",
     "start": "node dist/server.js",
     "mcp:stdio": "tsx src/mcp-stdio.ts",
+    "cli": "tsx src/cli.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
