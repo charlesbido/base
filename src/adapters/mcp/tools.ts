@@ -147,6 +147,17 @@ export function registerCampTools(server: McpServer, camp: Camp, actor: UserSumm
   tool('delete_event', 'Delete a schedule event.', { eventId: id('Event') },
     (a) => c.deleteEvent({ actorId, ...a }), 'delete');
 
+  // ---- Access tokens ------------------------------------------------------------------------
+  tool('list_access_tokens', 'List your own long-lived personal access tokens (never shows the raw token).',
+    {}, () => q.listAccessTokens({ actorId }), 'read');
+  tool('create_access_token', 'Mint a new long-lived personal access token (e.g. for another MCP client or script). ' +
+    'The raw token is only ever returned here — store it now, it cannot be fetched again.',
+    { name: z.string().describe('A label to recognise this token later, e.g. "laptop MCP client"'),
+      expiresInDays: z.number().int().positive().nullable().optional().describe('Omit or null for a token that never expires') },
+    (a) => c.createAccessToken({ actorId, ...a }));
+  tool('revoke_access_token', 'Revoke one of your personal access tokens immediately.', { tokenId: id('Access token') },
+    (a) => c.revokeAccessToken({ actorId, ...a }), 'delete');
+
   // ---- Campfire ---------------------------------------------------------------------------
   tool('read_campfire', "Read a project's Campfire chat (latest messages, or those since a cursor).",
     { projectId: id('Project'), since: z.string().optional().describe('cursor from a previous call'), limit: z.number().int().optional() },

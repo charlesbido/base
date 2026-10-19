@@ -190,6 +190,27 @@ describe('REST API', () => {
     expect((await api('POST', '/auth/login', { email: 'ada@example.com', password: 'wrong-password' })).status).toBe(401);
     expect((await api('GET', '/nope', undefined, token)).status).toBe(404);
   });
+
+  it('issues, lists and revokes personal access tokens, scoped to their owner', async () => {
+    const { token } = (await api('POST', '/auth/login', { email: 'ada@example.com', password: 'password123' })).body;
+    const { token: bobToken } = (await api('POST', '/auth/login', { email: 'bob@example.com', password: 'password123' })).body;
+
+    const created = await api('POST', '/access-tokens', { name: 'My laptop' }, token);
+    expect(created.status).toBe(201);
+    expect(created.body).toMatchObject({ name: 'My laptop', expiresAt: null });
+    const pat = created.body.token;
+
+    // The PAT itself authenticates to the REST API, same as a session token would.
+    expect((await api('GET', '/auth/me', undefined, pat)).body).toMatchObject({ email: 'ada@example.com' });
+
+    const list = await api('GET', '/access-tokens', undefined, token);
+    expect(list.body).toEqual([{ id: created.body.id, name: 'My laptop', createdAt: created.body.createdAt, expiresAt: null, revoked: false }]);
+    expect((await api('GET', '/access-tokens', undefined, bobToken)).body).toEqual([]);
+
+    expect((await api('DELETE', `/access-tokens/${created.body.id}`, undefined, bobToken)).status).toBe(403);
+    expect((await api('DELETE', `/access-tokens/${created.body.id}`, undefined, token)).status).toBe(200);
+    expect((await api('GET', '/auth/me', undefined, pat)).status).toBe(401);
+  });
 });
 
 describe('MCP adapter', () => {
@@ -229,6 +250,30 @@ describe('MCP adapter', () => {
 
       const err = await client.callTool({ name: 'get_project', arguments: { projectId: 'nope' } });
       expect(err.isError).toBe(true);
+    } finally {
+      await client.close();
+      mcpServer.close();
+    }
+  });
+
+  it('authenticates with a long-lived personal access token instead of a Session', async () => {
+    const { token } = (await api('POST', '/auth/login', { email: 'ada@example.com', password: 'password123' })).body;
+    const pat = (await api('POST', '/access-tokens', { name: 'MCP client' }, token)).body.token;
+
+    const mcpServer = createMcpApp(camp).listen(0);
+    await new Promise<void>((r) => mcpServer.once('listening', () => r()));
+    const mcpPort = (mcpServer.address() as AddressInfo).port;
+
+    const client = new Client({ name: 'camp-test-pat', version: '1.0.0' });
+    await client.connect(
+      new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${mcpPort}/mcp`), {
+        requestInit: { headers: { Authorization: `Bearer ${pat}` } },
+      }),
+    );
+    try {
+      const result = await client.callTool({ name: 'whoami', arguments: {} });
+      const whoami = JSON.parse((result as { content: { text: string }[] }).content[0]!.text);
+      expect(whoami.email).toBe('ada@example.com');
     } finally {
       await client.close();
       mcpServer.close();

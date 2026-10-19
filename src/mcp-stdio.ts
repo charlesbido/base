@@ -2,8 +2,11 @@
  * MCP over stdio — for MCP clients that launch a local subprocess (Claude Desktop, Claude Code, ...).
  *
  * Authenticates once at startup, then every tool call acts as that user:
- *   CAMP_TOKEN=<session token>                    or
+ *   CAMP_TOKEN=<access or session token>           or
  *   CAMP_EMAIL=<email> CAMP_PASSWORD=<password>
+ * CAMP_TOKEN should normally be a long-lived personal access token (create one with
+ * create_access_token, or POST /access-tokens) rather than a 30-day session token, since this
+ * process is typically launched once by a client config and left running/restarted unattended.
  * CAMP_DB selects the database file (default data/camp.db). Logs go to stderr; stdout is the protocol.
  */
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';

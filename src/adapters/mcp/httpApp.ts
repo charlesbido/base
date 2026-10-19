@@ -2,7 +2,9 @@
  * MCP over Streamable HTTP, served on the mcp.* vhost at POST /mcp.
  *
  * Stateless mode: each request gets its own McpServer + transport, bound to the user identified by
- * the `Authorization: Bearer <session token>` header (obtain one via POST api.*\/auth/login).
+ * the `Authorization: Bearer <token>` header — either a 30-day session token (POST api.*\/auth/login)
+ * or a long-lived personal access token (POST api.*\/access-tokens), which is the better fit here
+ * since this is usually a client config set up once and left alone.
  */
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import express, { type Request, type Response } from 'express';
@@ -21,7 +23,8 @@ export function createMcpApp(camp: Camp): express.Express {
   app.get('/', (_req, res) => {
     res.type('text/plain').send(
       'Camp MCP server (Streamable HTTP, stateless).\n' +
-        'POST /mcp with "Authorization: Bearer <session token>" and "Accept: application/json, text/event-stream".\n',
+        'POST /mcp with "Authorization: Bearer <session or access token>" and "Accept: application/json, text/event-stream".\n' +
+        'Prefer a long-lived personal access token (POST api.*/access-tokens) over a session token here.\n',
     );
   });
 
@@ -31,7 +34,7 @@ export function createMcpApp(camp: Camp): express.Express {
     const me = camp.queries.getCurrentUser({ token });
     if (!me.ok) {
       res.setHeader('WWW-Authenticate', 'Bearer');
-      return jsonRpcError(res, 401, 'Unauthorized: pass a Camp session token as "Authorization: Bearer <token>"');
+      return jsonRpcError(res, 401, 'Unauthorized: pass a Camp session or access token as "Authorization: Bearer <token>"');
     }
 
     const server = createCampMcpServer(camp, me.value);

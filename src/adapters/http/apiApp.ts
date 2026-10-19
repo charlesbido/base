@@ -86,6 +86,16 @@ export function createApiApp(camp: Camp, options: ApiOptions = {}): express.Expr
 
   app.get('/users', authed, handle((_req, res) => q.listUsers({ actorId: actorOf(res).id })));
 
+  // ---- Personal access tokens (long-lived bearer credentials for scripts and MCP clients) ----
+
+  app.get('/access-tokens', authed, handle((_req, res) => q.listAccessTokens({ actorId: actorOf(res).id })));
+  app.post('/access-tokens', authed, handle((req, res) =>
+    c.createAccessToken(input(req, { actorId: actorOf(res).id })), 201,
+  ));
+  app.delete('/access-tokens/:id', authed, handle((req, res) =>
+    c.revokeAccessToken({ actorId: actorOf(res).id, tokenId: param(req, 'id') }),
+  ));
+
   // ---- Projects & membership --------------------------------------------------------------
 
   app.get('/projects', authed, handle((_req, res) => q.listProjects({ actorId: actorOf(res).id })));
