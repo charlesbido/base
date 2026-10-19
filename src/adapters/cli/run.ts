@@ -1,9 +1,9 @@
 /**
  * CLI dispatch: resolves a subcommand, builds its input from flags, runs it, and shapes output.
  * No business logic here, same as the HTTP and MCP adapters — it only translates process.argv
- * into exactly one Camp command or query call.
+ * into exactly one REST API call.
  */
-import type { Camp, UserSummary } from '../../domain/index.js';
+import type { RestClient } from './httpClient.js';
 import { buildInput, camelToKebab, parseFlags } from './flags.js';
 import { type CliCommand, registry } from './registry.js';
 
@@ -42,9 +42,10 @@ export function printHelp(commandName?: string): void {
     printCommandHelp(command);
     return;
   }
-  console.log('camp — CLI for Camp, backed by the same commands/queries as the REST API and MCP server.\n');
-  console.log('Usage: camp <command> [--flag value ...] --token <token>');
+  console.log('camp — a REST client for Camp\'s api.* vhost (the same HTTP API curl or the web app uses).\n');
+  console.log('Usage: camp <command> [--flag value ...] --server-url <url> --token <token>');
   console.log('       camp help <command>              (flags for one command)\n');
+  console.log('--server-url / CAMP_SERVER_URL and --token / CAMP_TOKEN are both required.\n');
   console.log('Commands:');
   for (const command of registry) {
     console.log(`  ${command.name.padEnd(24)} ${command.description}`);
@@ -52,7 +53,7 @@ export function printHelp(commandName?: string): void {
 }
 
 /** Runs one subcommand; returns the process exit code. */
-export async function runCli(camp: Camp, actor: UserSummary, argv: string[]): Promise<number> {
+export async function runCli(client: RestClient, argv: string[]): Promise<number> {
   const [name, ...rest] = argv;
   const command = registry.find((c) => c.name === name);
   if (!command) {
@@ -72,7 +73,7 @@ export async function runCli(camp: Camp, actor: UserSummary, argv: string[]): Pr
     return 1;
   }
 
-  const result = await command.run(camp, actor, built.input ?? {});
+  const result = await command.run(client, built.input ?? {});
   if (result.ok) {
     console.log(JSON.stringify(result.value, null, 2));
     return 0;

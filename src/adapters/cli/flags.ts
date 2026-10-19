@@ -29,15 +29,16 @@ export function parseFlags(argv: string[]): Flags {
 }
 
 /**
- * Pulls the global `--token`/`--db` flags (and their env var fallbacks) out of argv, wherever
- * they appear, leaving the subcommand name and its own flags behind in `rest`.
+ * Pulls the global `--token`/`--server-url` flags (and their env var fallbacks) out of argv,
+ * wherever they appear, leaving the subcommand name and its own flags behind in `rest`.
+ * `--remote-url` is accepted as an alias for `--server-url`.
  */
 export function parseGlobalFlags(
   argv: string[],
   env: NodeJS.ProcessEnv = process.env,
-): { token?: string; dbFile?: string; rest: string[] } {
+): { token?: string; serverUrl?: string; rest: string[] } {
   let token = env.CAMP_TOKEN;
-  let dbFile = env.CAMP_DB;
+  let serverUrl = env.CAMP_SERVER_URL;
   const rest: string[] = [];
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -46,15 +47,17 @@ export function parseGlobalFlags(
       token = argv[++i];
     } else if (arg.startsWith('--token=')) {
       token = arg.slice('--token='.length);
-    } else if (arg === '--db') {
-      dbFile = argv[++i];
-    } else if (arg.startsWith('--db=')) {
-      dbFile = arg.slice('--db='.length);
+    } else if (arg === '--server-url' || arg === '--remote-url') {
+      serverUrl = argv[++i];
+    } else if (arg.startsWith('--server-url=')) {
+      serverUrl = arg.slice('--server-url='.length);
+    } else if (arg.startsWith('--remote-url=')) {
+      serverUrl = arg.slice('--remote-url='.length);
     } else {
       rest.push(arg);
     }
   }
-  return { token, dbFile, rest };
+  return { token, serverUrl, rest };
 }
 
 export const camelToKebab = (s: string): string => s.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);

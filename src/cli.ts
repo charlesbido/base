@@ -1,26 +1,23 @@
 #!/usr/bin/env node
 /**
- * Camp CLI — a third adapter over the same commands/queries as the REST API and MCP server (see
- * DECISIONS.md / README "Architecture": a `Camp` from `composeCamp(db)` and nothing else changes
- * in domain/ or ports/). Opens the SQLite database directly; no running server required.
+ * Camp CLI — a thin REST client over the api.* vhost: the exact same HTTP API curl or the web
+ * app talks to (see adapters/http/apiApp.ts). No local database access and no email/password
+ * fallback (unlike mcp-stdio.ts) — every invocation needs a server to call and a token to call it
+ * with, since this is meant to be run against a real (possibly remote) Camp deployment:
  *
- * Requires a token, always — there is no email/password fallback here (unlike mcp-stdio.ts),
- * since a CLI is scriptable and a long-lived personal access token is the right credential for
- * that: mint one with `create-access-token` (bootstrap that one call via the web app, the REST
- * API, or an MCP client), then:
+ *   camp <command> [--flag value ...] --server-url <url> --token <token>
+ *   CAMP_SERVER_URL=<url> CAMP_TOKEN=<token> camp <command> [--flag value ...]
  *
- *   camp <command> [--flag value ...] --token <token>
- *   CAMP_TOKEN=<token> camp <command> [--flag value ...]
- *
- * CAMP_DB (or --db) selects the database file (default data/camp.db). Run `camp help` for the
- * full command list, or `camp help <command>` for one command's flags.
+ * <url> is the api.* vhost's base URL, e.g. http://api.localhost:3000 or https://api.example.com
+ * (--remote-url is accepted as an alias for --server-url). Run `camp help` for the full command
+ * list, or `camp help <command>` for one command's flags.
  */
-import { DEFAULT_DB_FILE, openCamp } from './compose.js';
 import { parseGlobalFlags } from './adapters/cli/flags.js';
+import { createRestClient } from './adapters/cli/httpClient.js';
 import { printHelp, runCli } from './adapters/cli/run.js';
 
 async function main(): Promise<void> {
-  const { token, dbFile, rest } = parseGlobalFlags(process.argv.slice(2));
+  const { token, serverUrl, rest } = parseGlobalFlags(process.argv.slice(2));
   const [name] = rest;
 
   if (!name || name === 'help' || name === '--help' || name === '-h') {
@@ -28,6 +25,14 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (!serverUrl) {
+    console.error(
+      'camp: missing server URL. Pass --server-url <url>, or set CAMP_SERVER_URL in the environment.\n' +
+        'This is the api.* vhost, e.g. http://api.localhost:3000 or https://api.example.com.',
+    );
+    process.exitCode = 1;
+    return;
+  }
   if (!token) {
     console.error(
       'camp: missing token. Pass --token <token>, or set CAMP_TOKEN in the environment.\n' +
@@ -37,15 +42,8 @@ async function main(): Promise<void> {
     return;
   }
 
-  const { camp } = openCamp(dbFile ?? DEFAULT_DB_FILE);
-  const me = camp.queries.getCurrentUser({ token });
-  if (!me.ok) {
-    console.error(`camp: ${me.error.message}`);
-    process.exitCode = 1;
-    return;
-  }
-
-  process.exitCode = await runCli(camp, me.value, rest);
+  const client = createRestClient(serverUrl, token);
+  process.exitCode = await runCli(client, rest);
 }
 
 main().catch((err: unknown) => {

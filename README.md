@@ -226,12 +226,14 @@ Example client config:
 
 ## CLI
 
-A third adapter over the same commands/queries, no server required — it opens the SQLite database
-directly (`compose.ts`). Always requires a token (`--token <token>` or `CAMP_TOKEN=`); mint one
-with `POST api.*/access-tokens`, the web app's Access tokens page, or MCP's `create_access_token`.
+A thin REST client over `api.*` — the exact same HTTP API curl or the web app talks to, no local
+database access. Every invocation needs both a server URL (`--server-url <url>` / `--remote-url`,
+or `CAMP_SERVER_URL=`) and a token (`--token <token>` or `CAMP_TOKEN=`); mint one with
+`POST api.*/access-tokens`, the web app's Access tokens page, or MCP's `create_access_token`.
 
 ```sh
 pnpm run build
+export CAMP_SERVER_URL=http://api.localhost:3000
 PROJECT=$(node dist/cli.js create-project --name "Website redesign" --token "$TOKEN" | node -pe 'JSON.parse(require("fs").readFileSync(0)).id')
 node dist/cli.js list-todos --project-id "$PROJECT" --token "$TOKEN"
 node dist/cli.js help                 # every command
@@ -259,7 +261,7 @@ src/
     system/          SystemClock, UuidGenerator, CryptoTokenGenerator, BcryptPasswordHasher
     http/            Express REST adapter + static SPA host
     mcp/             MCP tool definitions + Streamable HTTP app
-    cli/             CLI command table, flag parsing, dispatch (see "CLI" above)
+    cli/             CLI command table, REST client, flag parsing, dispatch (see "CLI" above)
   compose.ts         composition root: SQLite + system adapters -> Camp
   server.ts          vhost wiring, one HTTP server
   mcp-stdio.ts       stdio MCP entrypoint
@@ -296,4 +298,4 @@ call the same methods; nothing in `domain/` or `ports/` changes.
 | `pnpm run dev:web`    | Vite dev server with HMR (proxies `/api` to the backend) |
 | `pnpm start`          | Run the compiled server |
 | `pnpm run mcp:stdio`  | MCP over stdio |
-| `pnpm run cli`        | CLI via `tsx` (no build step), e.g. `pnpm run cli -- whoami --token $TOKEN` |
+| `pnpm run cli`        | CLI via `tsx` (no build step), e.g. `pnpm run cli -- whoami --server-url http://api.localhost:3000 --token $TOKEN` |
