@@ -32,6 +32,7 @@ Judgment calls made without being able to ask. Each has a one-line rationale.
 - **Registration signs you in immediately.** It's the expected UX, and it's done in the HTTP adapter by calling the `login` command, so no rule is duplicated.
 - **The People directory lists every account to any signed-in user, and members are added by email/id of an existing account (no invitations).** v1 is a single-organisation install, and invite emails are out of scope.
 - **Passwords must be 8–72 characters.** 72 bytes is bcrypt's input limit; a longer password would be silently truncated.
+- **Personal access tokens (PATs), not OAuth, for long-lived MCP/script credentials.** A 30-day Session has no recovery path for a non-browser client, but a full OAuth 2.1 authorization server is a lot of machinery for a single-tenant v1 tool and a direct deviation from "no OAuth/SSO". A PAT is additive: minted from the signed-in web app (`POST /access-tokens`), optionally never expiring, revocable, hashed at rest (SHA-256 of a 256-bit random token — high-entropy already, so no bcrypt needed) and accepted anywhere a Session bearer token is (REST API, both MCP transports) via the same `getCurrentUser` check.
 
 ## HTTP, vhosts and the frontend
 

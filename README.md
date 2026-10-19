@@ -100,12 +100,34 @@ curl -s -X POST http://api.localhost:3000/todolists/$LIST/todos \
 curl -s http://api.localhost:3000/projects/$PROJECT/todolists -H "Authorization: Bearer $TOKEN"
 ```
 
+### Long-lived access tokens (for MCP clients and scripts)
+
+A session token from `/auth/login` expires after 30 days with no refresh path — fine for a
+browser, awkward for an MCP client or a cron job. A personal access token (PAT) is the fix: mint
+one from the web app (Account menu → Access tokens) or the API, and it works everywhere a session
+token does — the REST API, both MCP transports — until you revoke it.
+
+```sh
+# Mint a token that never expires (pass "expiresInDays": 90 for one that does)
+curl -s -X POST http://api.localhost:3000/access-tokens \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"name":"laptop MCP client"}'
+# {"id":"...","name":"laptop MCP client","token":"<shown once>","createdAt":"...","expiresAt":null}
+
+# List your tokens (never shows the raw value again) / revoke one
+curl -s http://api.localhost:3000/access-tokens -H "Authorization: Bearer $TOKEN"
+curl -s -X DELETE http://api.localhost:3000/access-tokens/<id> -H "Authorization: Bearer $TOKEN"
+```
+
+Only the token's SHA-256 hash is stored; the raw value is shown exactly once, at creation.
+
 ### Endpoints
 
 | Area       | Endpoints |
 | ---------- | --------- |
 | Auth       | `POST /auth/register` · `POST /auth/login` · `POST /auth/logout` · `GET /auth/me` |
 | People     | `GET /users` |
+| Access tokens | `GET/POST /access-tokens` · `DELETE /access-tokens/:id` |
 | Projects   | `GET/POST /projects` · `GET/PATCH/DELETE /projects/:id` · `POST /projects/:id/members` (`{email}` or `{userId}`) · `DELETE /projects/:id/members/:userId` |
 | To-dos     | `GET/POST /projects/:id/todolists` · `PATCH/DELETE /todolists/:id` · `POST /todolists/:id/todos` · `GET/PATCH/DELETE /todos/:id` · `POST/DELETE /todos/:id/completion` · `POST /todos/:id/comments` |
 | Messages   | `GET/POST /projects/:id/posts` · `GET/PATCH/DELETE /posts/:id` · `POST /posts/:id/comments` |
@@ -125,7 +147,8 @@ The MCP adapter exposes the **same** commands and queries as tools: `whoami`, `l
 `update_todo`, `complete_todo`, `uncomplete_todo`, `delete_todo`, `comment_on_todo`,
 `list_messages`, `get_message`, `post_message`, `comment_on_message`, `list_docs`, `get_doc`,
 `create_doc`, `update_doc`, `list_events`, `create_event`, `update_event`, `delete_event`,
-`read_campfire`, `send_campfire_message`.
+`read_campfire`, `send_campfire_message`, `list_access_tokens`, `create_access_token`,
+`revoke_access_token`.
 
 ### Streamable HTTP (on `mcp.*`)
 
@@ -159,14 +182,23 @@ To connect an MCP client (Claude Code, MCP Inspector, …), point it at
 `http://mcp.localhost:3000/mcp` and pass the header `Authorization: Bearer <token>`.
 `test/integration/http.test.ts` also drives this endpoint with the official SDK `Client`.
 
+**Use a long-lived access token instead of a session token** so the connection survives past 30
+days: mint one with `POST /access-tokens` (see above) and pass it the same way —
+`Authorization: Bearer <access token>`. `getCurrentUser` accepts either kind transparently, so no
+other part of the setup changes. `test/integration/http.test.ts` has a dedicated test for this.
+
 ### stdio
 
 For clients that launch a subprocess:
 
 ```sh
 CAMP_EMAIL=ada@example.com CAMP_PASSWORD=password123 pnpm run --silent mcp:stdio
-# or CAMP_TOKEN=<session token> pnpm run --silent mcp:stdio
+# or CAMP_TOKEN=<session or access token> pnpm run --silent mcp:stdio
 ```
+
+For a client config you set up once and forget (the common case for stdio clients), prefer
+`CAMP_TOKEN=<access token>` over `CAMP_EMAIL`/`CAMP_PASSWORD` or a session token — it's the same
+long-lived personal access token from the walkthrough above, and it won't go stale after 30 days.
 
 Verified with:
 
