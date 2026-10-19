@@ -3,6 +3,7 @@
  * (ordering, cascading deletes) so domain tests run fast with zero I/O.
  */
 import type {
+  AccessTokenRepository,
   CampDeps,
   ChatQueryOptions,
   ChatRepository,
@@ -21,6 +22,7 @@ import type {
   UserRepository,
 } from '../../src/ports/index.js';
 import type {
+  AccessToken,
   ChatMessage,
   Comment,
   CommentParentType,
@@ -42,6 +44,7 @@ const byCreated = <T extends { createdAt: string }>(a: T, b: T) => a.createdAt.l
 export class Store {
   users = new Map<Id, User>();
   sessions = new Map<string, Session>();
+  accessTokens = new Map<Id, AccessToken>();
   projects = new Map<Id, Project>();
   /** projectId -> (userId -> addedAt), insertion-ordered */
   members = new Map<Id, Map<Id, ISODateTime>>();
@@ -88,6 +91,29 @@ export class FakeSessions implements SessionRepository {
   }
   delete(token: string) {
     this.s.sessions.delete(token);
+  }
+}
+
+export class FakeAccessTokens implements AccessTokenRepository {
+  constructor(private s: Store) {}
+  insert(token: AccessToken) {
+    this.s.accessTokens.set(token.id, clone(token));
+  }
+  findByHash(tokenHash: string) {
+    return clone([...this.s.accessTokens.values()].find((t) => t.tokenHash === tokenHash) ?? null);
+  }
+  findById(id: Id) {
+    return clone(this.s.accessTokens.get(id) ?? null);
+  }
+  listByUser(userId: Id) {
+    return [...this.s.accessTokens.values()]
+      .filter((t) => t.userId === userId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map(clone);
+  }
+  revoke(id: Id, revokedAt: ISODateTime) {
+    const t = this.s.accessTokens.get(id);
+    if (t) t.revokedAt = revokedAt;
   }
 }
 
@@ -302,6 +328,17 @@ export class SequentialIds implements IdGenerator {
   }
 }
 
+/** Sequential tokens with a non-reversing but deterministic "hash" (just a tagged copy). */
+export class FakeTokens implements TokenGenerator {
+  private n = 0;
+  next() {
+    return `token-${++this.n}`;
+  }
+  hash(token: string) {
+    return `hash:${token}`;
+  }
+}
+
 /** Not a real hash — just reversible enough to prove the hasher was used. */
 export class FakeHasher implements PasswordHasher {
   async hash(plain: string) {
@@ -323,6 +360,7 @@ export function fakeDeps(): FakeDeps {
     store,
     users: new FakeUsers(store),
     sessions: new FakeSessions(store),
+    accessTokens: new FakeAccessTokens(store),
     projects: new FakeProjects(store),
     todos: new FakeTodos(store),
     comments: new FakeComments(store),
@@ -332,7 +370,7 @@ export function fakeDeps(): FakeDeps {
     chat: new FakeChat(store),
     clock: new FakeClock(),
     ids: new SequentialIds('id'),
-    tokens: new SequentialIds('token') as TokenGenerator,
+    tokens: new FakeTokens(),
     passwords: new FakeHasher(),
   };
 }

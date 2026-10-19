@@ -9,6 +9,7 @@ import type { CampDeps } from '../ports/index.js';
 
 import { addComment } from './commands/addComment.js';
 import { addProjectMember } from './commands/addProjectMember.js';
+import { createAccessToken } from './commands/createAccessToken.js';
 import { createDoc } from './commands/createDoc.js';
 import { createEvent } from './commands/createEvent.js';
 import { createPost } from './commands/createPost.js';
@@ -27,6 +28,7 @@ import { logout } from './commands/logout.js';
 import { postChatMessage } from './commands/postChatMessage.js';
 import { registerUser } from './commands/registerUser.js';
 import { removeProjectMember } from './commands/removeProjectMember.js';
+import { revokeAccessToken } from './commands/revokeAccessToken.js';
 import { setTodoCompletion } from './commands/setTodoCompletion.js';
 import { updateDoc } from './commands/updateDoc.js';
 import { updateEvent } from './commands/updateEvent.js';
@@ -40,6 +42,7 @@ import { getEvent } from './queries/getEvent.js';
 import { getPost } from './queries/getPost.js';
 import { getProject } from './queries/getProject.js';
 import { getTodo } from './queries/getTodo.js';
+import { listAccessTokens } from './queries/listAccessTokens.js';
 import { listChatMessages } from './queries/listChatMessages.js';
 import { listDocs } from './queries/listDocs.js';
 import { listEvents } from './queries/listEvents.js';
@@ -60,6 +63,7 @@ export function createCamp(deps: CampDeps) {
     commands: {
       addComment: bind(deps, addComment),
       addProjectMember: bind(deps, addProjectMember),
+      createAccessToken: bind(deps, createAccessToken),
       createDoc: bind(deps, createDoc),
       createEvent: bind(deps, createEvent),
       createPost: bind(deps, createPost),
@@ -78,6 +82,7 @@ export function createCamp(deps: CampDeps) {
       postChatMessage: bind(deps, postChatMessage),
       registerUser: bind(deps, registerUser),
       removeProjectMember: bind(deps, removeProjectMember),
+      revokeAccessToken: bind(deps, revokeAccessToken),
       setTodoCompletion: bind(deps, setTodoCompletion),
       updateDoc: bind(deps, updateDoc),
       updateEvent: bind(deps, updateEvent),
@@ -94,6 +99,7 @@ export function createCamp(deps: CampDeps) {
       getPost: bind(deps, getPost),
       getProject: bind(deps, getProject),
       getTodo: bind(deps, getTodo),
+      listAccessTokens: bind(deps, listAccessTokens),
       listChatMessages: bind(deps, listChatMessages),
       listDocs: bind(deps, listDocs),
       listEvents: bind(deps, listEvents),
@@ -115,6 +121,7 @@ export type * from './views.js';
 
 export type * from './commands/addComment.js';
 export type * from './commands/addProjectMember.js';
+export type * from './commands/createAccessToken.js';
 export type * from './commands/createDoc.js';
 export type * from './commands/createEvent.js';
 export type * from './commands/createPost.js';
@@ -133,6 +140,7 @@ export type * from './commands/logout.js';
 export type * from './commands/postChatMessage.js';
 export type * from './commands/registerUser.js';
 export type * from './commands/removeProjectMember.js';
+export type * from './commands/revokeAccessToken.js';
 export type * from './commands/setTodoCompletion.js';
 export type * from './commands/updateDoc.js';
 export type * from './commands/updateEvent.js';
@@ -146,6 +154,7 @@ export type * from './queries/getEvent.js';
 export type * from './queries/getPost.js';
 export type * from './queries/getProject.js';
 export type * from './queries/getTodo.js';
+export type * from './queries/listAccessTokens.js';
 export type * from './queries/listChatMessages.js';
 export type * from './queries/listDocs.js';
 export type * from './queries/listEvents.js';

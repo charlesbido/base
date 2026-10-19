@@ -1,5 +1,5 @@
 /** Adapters for the "system" ports: time, randomness, and password hashing. */
-import { randomBytes, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import type { Clock, IdGenerator, PasswordHasher, TokenGenerator } from '../../ports/index.js';
 
@@ -19,6 +19,13 @@ export class UuidGenerator implements IdGenerator {
 export class CryptoTokenGenerator implements TokenGenerator {
   next(): string {
     return randomBytes(32).toString('base64url');
+  }
+  /**
+   * SHA-256 (not bcrypt): tokens are high-entropy random values, not low-entropy secrets, so a
+   * fast deterministic hash is safe and — unlike bcrypt — lets access tokens be looked up by hash.
+   */
+  hash(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
   }
 }
 

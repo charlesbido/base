@@ -18,6 +18,23 @@ export interface SessionView {
   user: UserSummary;
 }
 
+/** Returned once, right after creation — it's the only time the raw token is ever shown. */
+export interface AccessTokenCreated {
+  id: Id;
+  name: string;
+  token: string;
+  createdAt: ISODateTime;
+  expiresAt: ISODateTime | null;
+}
+
+export interface AccessTokenView {
+  id: Id;
+  name: string;
+  createdAt: ISODateTime;
+  expiresAt: ISODateTime | null;
+  revoked: boolean;
+}
+
 export interface ProjectCard {
   id: Id;
   name: string;

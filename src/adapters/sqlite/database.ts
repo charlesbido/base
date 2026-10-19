@@ -130,6 +130,18 @@ const MIGRATIONS: string[] = [
   );
   CREATE INDEX chat_project_created ON chat_messages(project_id, created_at);
   `,
+  /* 2: personal access tokens (long-lived bearer credentials for scripts/MCP clients) */ `
+  CREATE TABLE access_tokens (
+    id         TEXT PRIMARY KEY,
+    user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name       TEXT NOT NULL,
+    token_hash TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL,
+    expires_at TEXT,
+    revoked_at TEXT
+  );
+  CREATE INDEX access_tokens_user ON access_tokens(user_id);
+  `,
 ];
 
 /** Opens (creating if needed) a database and brings its schema up to date. Use ":memory:" in tests. */

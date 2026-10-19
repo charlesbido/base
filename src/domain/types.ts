@@ -31,6 +31,23 @@ export interface Session {
   expiresAt: ISODateTime;
 }
 
+/**
+ * A long-lived personal access token: an alternative to a browser Session for scripts and MCP
+ * clients, which can't go through the 30-day login/cookie dance. Only `tokenHash` is persisted —
+ * the raw value is shown once, at creation.
+ */
+export interface AccessToken {
+  id: Id;
+  userId: Id;
+  name: string;
+  tokenHash: string;
+  createdAt: ISODateTime;
+  /** null = never expires. */
+  expiresAt: ISODateTime | null;
+  /** null = still active. */
+  revokedAt: ISODateTime | null;
+}
+
 export interface Project {
   id: Id;
   name: string;

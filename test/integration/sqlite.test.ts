@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createCamp, type Camp } from '../../src/domain/index.js';
 import { openDatabase, sqliteRepositories, type Db } from '../../src/adapters/sqlite/index.js';
-import { BcryptPasswordHasher } from '../../src/adapters/system/index.js';
+import { BcryptPasswordHasher, CryptoTokenGenerator } from '../../src/adapters/system/index.js';
 import { FakeClock, SequentialIds } from '../fakes/inMemory.js';
 import { unwrap } from '../fakes/fixtures.js';
 
@@ -16,7 +16,7 @@ function sqliteCamp(db: Db, clock = new FakeClock()) {
     ...sqliteRepositories(db),
     clock,
     ids: new SequentialIds('id'),
-    tokens: new SequentialIds('tok'),
+    tokens: new CryptoTokenGenerator(),
     passwords: new BcryptPasswordHasher(4),
   });
   return { camp, clock };
@@ -130,6 +130,25 @@ describe('SQLite adapters', () => {
     expect(
       unwrap(camp.queries.listEvents({ actorId: alice.id, projectId: project.id, from: '2026-11-02T00:00:00Z' })).map((e) => e.title),
     ).toEqual(['b']);
+    db.close();
+  });
+
+  it('creates a long-lived access token that getCurrentUser accepts, and persists only its hash', async () => {
+    const db = openDatabase(':memory:');
+    const { camp, clock } = sqliteCamp(db);
+    const { alice } = await seed(camp);
+
+    const created = unwrap(camp.commands.createAccessToken({ actorId: alice.id, name: 'My laptop' }));
+    expect(unwrap(camp.queries.getCurrentUser({ token: created.token })).id).toBe(alice.id);
+
+    const stored = db.prepare('SELECT token_hash FROM access_tokens WHERE id = ?').get(created.id) as { token_hash: string };
+    expect(stored.token_hash).not.toBe(created.token);
+
+    clock.advance(1000 * 60 * 60 * 24 * 365 * 10); // 10 years — long past any Session's TTL
+    expect(unwrap(camp.queries.getCurrentUser({ token: created.token })).id).toBe(alice.id);
+
+    unwrap(camp.commands.revokeAccessToken({ actorId: alice.id, tokenId: created.id }));
+    expect(camp.queries.getCurrentUser({ token: created.token }).ok).toBe(false);
     db.close();
   });
 
